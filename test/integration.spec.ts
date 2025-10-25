@@ -130,7 +130,7 @@ const hello = "hello";
         notion.bulletedListItem(
           [notion.richText('Item 1')],
           // @ts-expect-error This problem is being addressed in issue #15 (https://github.com/tryfabric/martian/issues/15)
-          [notion.bulletedListItem([notion.richText('Sub Item 1')])]
+          [notion.bulletedListItem([notion.richText('Sub Item 1')])],
         ),
         notion.bulletedListItem([notion.richText('Item 2')]),
       ];
@@ -158,7 +158,7 @@ const hello = "hello";
               [notion.richText('Content Cell')],
             ]),
           ],
-          2
+          2,
         ),
       ];
 
@@ -216,6 +216,30 @@ const hello = "hello";
         notion.equation('L = \\frac{1}{2} \\rho v^2 S C_L \\\\\ntest'),
       ];
       console.log(expected);
+      expect(actual).toStrictEqual(expected);
+    });
+
+    it('should split paragraphs on hard line breaks', () => {
+      const text =
+        'You can _italicize_ or **bold** text.  \nThis is the second line of text.\nAnd this is in the same line';
+
+      const actual = markdownToBlocks(text);
+
+      const expected = [
+        notion.paragraph([
+          notion.richText('You can '),
+          notion.richText('italicize', {annotations: {italic: true}}),
+          notion.richText(' or '),
+          notion.richText('bold', {annotations: {bold: true}}),
+          notion.richText(' text.'),
+        ]),
+        notion.paragraph([
+          notion.richText(
+            'This is the second line of text.\nAnd this is in the same line',
+          ),
+        ]),
+      ];
+
       expect(actual).toStrictEqual(expected);
     });
   });
@@ -326,7 +350,7 @@ const hello = "hello";
 
       expect(() => markdownToRichText(text, {nonInline: 'throw'})).toThrow();
       expect(() =>
-        markdownToRichText(text, {nonInline: 'ignore'})
+        markdownToRichText(text, {nonInline: 'ignore'}),
       ).not.toThrow();
     });
   });
