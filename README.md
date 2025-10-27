@@ -297,6 +297,21 @@ GFM alerts are automatically converted to Notion callouts with appropriate icons
 - IMPORTANT (☝️, purple): Key information users need to know
 - WARNING (⚠️, yellow): Urgent info that needs immediate attention
 - CAUTION (❗, red): Advises about risks or negative outcomes
+- INFO (📘, blue): General context or clarifications
+- TODO (📝, gray): Tasks that need to be completed
+- SUCCESS (✅, green): Highlights positive outcomes or completions
+- QUESTION (❓, purple): Raises open questions or items needing clarification
+- FAILURE (❌, red): Calls out broken flows or unsuccessful attempts
+- DANGER (☠️, red): Signals critical problems that demand immediate action
+- BUG (🐛, orange): Marks known issues or defects
+- EXAMPLE (🧪, blue): Provides illustrative examples or sample usage
+- QUOTE (💬, gray): Emphasizes notable quotes or references
+
+#### Obsidian Callouts
+
+Obsidian-style callouts (e.g. `[!info]`, `[!warning]-`, `[!bug] Custom title`) are detected automatically and rendered as Notion callouts. The marker can be lowercase or uppercase, and any text after the marker becomes the callout title/body (if you omit a title, a sensible default is inserted). The following Obsidian callout types are supported:
+
+`info`, `todo`, `tip`, `success`, `question`, `warning`, `failure`, `danger`, `bug`, `example`, `quote`
 
 #### Emoji-style Callouts
 
