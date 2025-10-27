@@ -1,6 +1,6 @@
 {
   "name": "@jxpeng98/martian",
-  "version": "1.2.8",
+  "version": "1.3.0",
   "description": "Converts Markdown to Notion Blocks and RichText",
   "repository": "https://github.com/jxpeng98/martian",
   "type": "module",
