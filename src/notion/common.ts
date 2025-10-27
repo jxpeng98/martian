@@ -218,6 +218,7 @@ export const SUPPORTED_EMOJI_COLOR_MAP: Partial<
   '🚧': 'yellow_background',
   '❗': 'red_background',
   '💡': 'green_background',
+  '☝️': 'purple_background',
   '📝': 'gray_background',
   '✅': 'green_background',
   '❓': 'purple_background',
