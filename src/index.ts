@@ -40,3 +40,7 @@ export function markdownToRichText(
   const root = unified().use(markdown).use(gfm).parse(text);
   return parseRichText(root as unknown as md.Root, options);
 }
+
+export {LIMITS} from './notion';
+
+export {paragraph} from './notion';
