@@ -1,101 +1,117 @@
+// scripts/languageMap.ts
 // This script is responsible for generating src/notion/languageMap.json
 
-/* eslint-disable n/no-unpublished-import */
-import l, {Language} from 'linguist-languages';
-import fs from 'fs';
-import path from 'path';
-import {supportedCodeLang} from '../src/notion';
+import * as linguistLanguages from 'linguist-languages';
+import type { Language } from 'linguist-languages';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { supportedCodeLang } from '../src/notion';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+type LinguistLanguageMap = typeof linguistLanguages;
 
 export const languages: Record<
   supportedCodeLang,
-  Language | Language[] | undefined
+  LinguistLanguageMap[keyof LinguistLanguageMap] | undefined
 > = {
-  abap: l.ABAP,
-  arduino: undefined, // Handled as C++
-  bash: l.Shell,
-  basic: l.BASIC,
-  c: l.C,
-  clojure: l.Clojure,
-  coffeescript: l.CoffeeScript,
-  'c++': l['C++'],
-  'c#': l['C#'],
-  css: l.CSS,
-  dart: l.Dart,
-  diff: l.Diff,
-  docker: l.Dockerfile,
-  elixir: l.Elixir,
-  elm: l.Elm,
-  erlang: l.Erlang,
-  flow: undefined, // Handled as JavaScript
-  fortran: l.Fortran,
-  'f#': l['F#'],
-  gherkin: l.Gherkin,
-  glsl: l.GLSL,
-  go: l.Go,
-  graphql: l.GraphQL,
-  groovy: l.Groovy,
-  haskell: l.Haskell,
-  html: l.HTML,
-  java: l.Java,
-  javascript: l.JavaScript,
-  json: l.JSON,
-  julia: l.Julia,
-  kotlin: l.Kotlin,
-  latex: l.TeX,
-  less: l.Less,
-  lisp: l['Common Lisp'],
-  livescript: l.LiveScript,
-  lua: l.Lua,
-  makefile: l.Makefile,
-  markdown: l.Markdown,
-  markup: undefined, // Handled as ?
-  matlab: l.MATLAB,
-  mermaid: undefined, // Handled as Markdown
-  nix: l.Nix,
-  'objective-c': l['Objective-C'],
-  ocaml: l.OCaml,
-  pascal: l.Pascal,
-  perl: l.Perl,
-  php: l.PHP,
+  abap: linguistLanguages.ABAP,
+  arduino: undefined,
+  bash: linguistLanguages.Shell,
+  basic: linguistLanguages.BASIC,
+  c: linguistLanguages.C,
+  clojure: linguistLanguages.Clojure,
+  coffeescript: linguistLanguages.CoffeeScript,
+  'c++': linguistLanguages['C++'],
+  'c#': linguistLanguages['C#'],
+  css: linguistLanguages.CSS,
+  dart: linguistLanguages.Dart,
+  diff: linguistLanguages.Diff,
+  docker: linguistLanguages.Dockerfile,
+  elixir: linguistLanguages.Elixir,
+  elm: linguistLanguages.Elm,
+  erlang: linguistLanguages.Erlang,
+  flow: undefined,
+  fortran: linguistLanguages.Fortran,
+  'f#': linguistLanguages['F#'],
+  gherkin: linguistLanguages.Gherkin,
+  glsl: linguistLanguages.GLSL,
+  go: linguistLanguages.Go,
+  graphql: linguistLanguages.GraphQL,
+  groovy: linguistLanguages.Groovy,
+  haskell: linguistLanguages.Haskell,
+  html: linguistLanguages.HTML,
+  java: linguistLanguages.Java,
+  javascript: linguistLanguages.JavaScript,
+  json: linguistLanguages.JSON,
+  julia: linguistLanguages.Julia,
+  kotlin: linguistLanguages.Kotlin,
+  latex: linguistLanguages.TeX,
+  less: linguistLanguages.Less,
+  lisp: linguistLanguages['Common Lisp'],
+  livescript: linguistLanguages.LiveScript,
+  lua: linguistLanguages.Lua,
+  makefile: linguistLanguages.Makefile,
+  markdown: linguistLanguages.Markdown,
+  markup: undefined,
+  matlab: linguistLanguages.MATLAB,
+  mermaid: undefined,
+  nix: linguistLanguages.Nix,
+  'objective-c': linguistLanguages['Objective-C'],
+  ocaml: linguistLanguages.OCaml,
+  pascal: linguistLanguages.Pascal,
+  perl: linguistLanguages.Perl,
+  php: linguistLanguages.PHP,
   'plain text': undefined,
-  powershell: l.PowerShell,
-  prolog: l.Prolog,
-  protobuf: l['Protocol Buffer'],
-  python: l.Python,
-  r: l.R,
-  reason: l.Reason,
-  ruby: l.Ruby,
-  rust: l.Rust,
-  sass: l.Sass,
-  scala: l.Scala,
-  scheme: l.Scheme,
-  scss: l.SCSS,
-  shell: l.Shell,
-  sql: l.SQL,
-  swift: l.Swift,
-  typescript: l.TypeScript,
-  'vb.net': l['Visual Basic .NET'],
-  verilog: l.Verilog,
-  vhdl: l.VHDL,
-  'visual basic': undefined, // Handled as VB.Net
-  webassembly: l.WebAssembly,
-  xml: l.XML,
-  yaml: l.YAML,
-  'java/c/c++/c#': l.Java, // Other languages have their own tag
+  powershell: linguistLanguages.PowerShell,
+  prolog: linguistLanguages.Prolog,
+  protobuf: linguistLanguages['Protocol Buffer'],
+  python: linguistLanguages.Python,
+  r: linguistLanguages.R,
+  reason: linguistLanguages.Reason,
+  ruby: linguistLanguages.Ruby,
+  rust: linguistLanguages.Rust,
+  sass: linguistLanguages.Sass,
+  scala: linguistLanguages.Scala,
+  scheme: linguistLanguages.Scheme,
+  scss: linguistLanguages.SCSS,
+  shell: linguistLanguages.Shell,
+  sql: linguistLanguages.SQL,
+  swift: linguistLanguages.Swift,
+  typescript: linguistLanguages.TypeScript,
+  'vb.net': linguistLanguages['Visual Basic .NET'],
+  verilog: linguistLanguages.Verilog,
+  vhdl: linguistLanguages.VHDL,
+  'visual basic': undefined,
+  webassembly: linguistLanguages.WebAssembly,
+  xml: linguistLanguages.XML,
+  yaml: linguistLanguages.YAML,
+  'java/c/c++/c#': linguistLanguages.Java
 };
 
 const map: Record<string, string> = {};
 
 Object.entries(languages).forEach(([notionKey, value]) => {
-  ([value].flat().filter(e => !!e) as Language[]).forEach(lang => {
-    map[lang.aceMode] = notionKey;
-    lang.aliases?.forEach(alias => {
-      map[alias] = notionKey;
+  (Array.isArray(value) ? value : [value])
+    .filter(Boolean)
+    .forEach((lang) => {
+      const l = lang as Language;
+      const base = (l.aceMode ?? l.name ?? '').toLowerCase();
+      if (base) map[base] = notionKey;
+
+      l.aliases?.forEach((alias) => {
+        const k = alias.toLowerCase();
+        map[k] = notionKey;
+      });
     });
-  });
 });
 
+const outDir = path.join(__dirname, '../src/notion');
+fs.mkdirSync(outDir, { recursive: true });
+
 fs.writeFileSync(
-  path.join(__dirname, '../src/notion/languageMap.json'),
-  JSON.stringify(map, null, 2),
+  path.join(outDir, 'languageMap.json'),
+  JSON.stringify(map, null, 2)
 );
