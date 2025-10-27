@@ -171,34 +171,69 @@ function parseBlockquote(
       /^(?:\\\[|\[)!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/,
     );
 
-    if (gfmMatch && notion.isGfmAlertType(gfmMatch[1])) {
-      const alertType = gfmMatch[1];
-      const alertConfig = notion.GFM_ALERT_MAP[alertType];
-      const displayType =
-        alertType.charAt(0).toUpperCase() + alertType.slice(1).toLowerCase();
+    if (gfmMatch) {
+      const alertType = gfmMatch[1].toUpperCase();
+      if (notion.isGfmAlertType(alertType)) {
+        const alertConfig = notion.GFM_ALERT_MAP[alertType];
+        const displayType = alertConfig.title;
 
-      const children = [];
-      const contentLines = firstTextNode.value.split('\n').slice(1);
+        const children = [];
+        const contentLines = firstTextNode.value.split('\n').slice(1);
 
-      if (contentLines.length > 0) {
-        children.push(
-          notion.paragraph(
-            parseInline({
-              type: 'text',
-              value: contentLines.join('\n'),
-            }),
-          ),
+        if (contentLines.length > 0) {
+          children.push(
+            notion.paragraph(
+              parseInline({
+                type: 'text',
+                value: contentLines.join('\n'),
+              }),
+            ),
+          );
+        }
+
+        children.push(...parseSubsequentBlocks());
+
+        return notion.callout(
+          [notion.richText(displayType)],
+          alertConfig.emoji,
+          alertConfig.color,
+          children,
         );
       }
+    }
 
-      children.push(...parseSubsequentBlocks());
+    const obsidianMatch = firstTextNode.value.match(
+      /^\[!([a-z]+)\](?:[+-])?\s*/i,
+    );
 
-      return notion.callout(
-        [notion.richText(displayType)],
-        alertConfig.emoji,
-        alertConfig.color,
-        children,
-      );
+    if (obsidianMatch) {
+      const calloutType = obsidianMatch[1].toUpperCase();
+      if (notion.isGfmAlertType(calloutType)) {
+        const calloutConfig = notion.GFM_ALERT_MAP[calloutType];
+        const paragraph = firstChild as md.Paragraph;
+        const remainingFirstText = firstTextNode.value.slice(
+          obsidianMatch[0].length,
+        );
+
+        const richText = paragraph.children.flatMap(child =>
+          child === firstTextNode
+            ? remainingFirstText
+              ? parseInline({type: 'text', value: remainingFirstText})
+              : []
+            : parseInline(child),
+        );
+
+        if (richText.length === 0) {
+          richText.push(notion.richText(calloutConfig.title));
+        }
+
+        return notion.callout(
+          richText,
+          calloutConfig.emoji,
+          calloutConfig.color,
+          parseSubsequentBlocks(),
+        );
+      }
     }
 
     // Check for emoji syntax if enabled

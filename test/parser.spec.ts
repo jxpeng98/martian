@@ -454,4 +454,52 @@ describe('gfm parser', () => {
 
     expect(actual).toStrictEqual(expected);
   });
+
+  it('should parse Obsidian callout with inline title and formatting', () => {
+    const ast = md.root(
+      md.blockquote(
+        md.paragraph(
+          md.text('[!info] '),
+          md.strong(md.text('Heads up:')),
+          md.text(' Use the new flow.'),
+        ),
+        md.paragraph(md.text('More context')),
+      ),
+    );
+
+    const actual = parseBlocks(ast, options);
+
+    const expected = [
+      notion.callout(
+        [
+          notion.richText('Heads up:', {annotations: {bold: true}}),
+          notion.richText(' Use the new flow.'),
+        ],
+        '📘',
+        'blue_background',
+        [notion.paragraph([notion.richText('More context')])],
+      ),
+    ];
+
+    expect(actual).toStrictEqual(expected);
+  });
+
+  it('should parse Obsidian callout without custom title using defaults', () => {
+    const ast = md.root(
+      md.blockquote(
+        md.paragraph(md.text('[!bug]+')),
+        md.paragraph(md.text('Reproduction steps go here')),
+      ),
+    );
+
+    const actual = parseBlocks(ast, options);
+
+    const expected = [
+      notion.callout([notion.richText('Bug')], '🐛', 'orange_background', [
+        notion.paragraph([notion.richText('Reproduction steps go here')]),
+      ]),
+    ];
+
+    expect(actual).toStrictEqual(expected);
+  });
 });
