@@ -169,6 +169,15 @@ export const SUPPORTED_GFM_ALERT_TYPES = [
   'IMPORTANT',
   'WARNING',
   'CAUTION',
+  'INFO',
+  'TODO',
+  'SUCCESS',
+  'QUESTION',
+  'FAILURE',
+  'DANGER',
+  'BUG',
+  'EXAMPLE',
+  'QUOTE',
 ] as const;
 
 export type GfmAlertType = (typeof SUPPORTED_GFM_ALERT_TYPES)[number];
@@ -182,13 +191,23 @@ export const GFM_ALERT_MAP: Record<
   {
     emoji: EmojiRequest;
     color: ApiColor;
+    title: string;
   }
 > = {
-  NOTE: {emoji: '📘', color: 'blue_background'},
-  TIP: {emoji: '💡', color: 'green_background'},
-  IMPORTANT: {emoji: '☝️', color: 'purple_background'},
-  WARNING: {emoji: '⚠️', color: 'yellow_background'},
-  CAUTION: {emoji: '❗', color: 'red_background'},
+  NOTE: {emoji: '📘', color: 'blue_background', title: 'Note'},
+  TIP: {emoji: '💡', color: 'green_background', title: 'Tip'},
+  IMPORTANT: {emoji: '☝️', color: 'purple_background', title: 'Important'},
+  WARNING: {emoji: '⚠️', color: 'yellow_background', title: 'Warning'},
+  CAUTION: {emoji: '❗', color: 'red_background', title: 'Caution'},
+  INFO: {emoji: '📘', color: 'blue_background', title: 'Info'},
+  TODO: {emoji: '📝', color: 'gray_background', title: 'To-do'},
+  SUCCESS: {emoji: '✅', color: 'green_background', title: 'Success'},
+  QUESTION: {emoji: '❓', color: 'purple_background', title: 'Question'},
+  FAILURE: {emoji: '❌', color: 'red_background', title: 'Failure'},
+  DANGER: {emoji: '☠️', color: 'red_background', title: 'Danger'},
+  BUG: {emoji: '🐛', color: 'orange_background', title: 'Bug'},
+  EXAMPLE: {emoji: '🧪', color: 'blue_background', title: 'Example'},
+  QUOTE: {emoji: '💬', color: 'gray_background', title: 'Quote'},
 } as const;
 
 export const SUPPORTED_EMOJI_COLOR_MAP: Partial<
@@ -198,4 +217,14 @@ export const SUPPORTED_EMOJI_COLOR_MAP: Partial<
   '📘': 'blue_background',
   '🚧': 'yellow_background',
   '❗': 'red_background',
+  '💡': 'green_background',
+  '📝': 'gray_background',
+  '✅': 'green_background',
+  '❓': 'purple_background',
+  '⚠️': 'yellow_background',
+  '❌': 'red_background',
+  '☠️': 'red_background',
+  '🐛': 'orange_background',
+  '🧪': 'blue_background',
+  '💬': 'gray_background',
 };
