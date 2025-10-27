@@ -1,27 +1,41 @@
-import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+// ESM flat config for ESLint 9
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-export default tseslint.config(
+export default [
+  // 1) Ignore directories/files (including this file)
   {
-    ignores: ['build/**', 'jest.config.ts'],
+    ignores: [
+      'node_modules/**',
+      'build/**',
+      'eslint.config.js'
+    ],
   },
-  js.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
+
+  // 2) JS files: use only JS recommended rules (won't trigger TS rules)
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['**/*.{js,mjs,cjs}'],
+    ...js.configs.recommended,
+  },
+
+  // 3) TS files: enable rules with type information
+  {
+    files: ['src/**/*.ts', 'test/**/*.ts', 'scripts/**/*.ts'],
     languageOptions: {
+      parser: tseslint.parser,
       parserOptions: {
         project: ['./tsconfig.json'],
-        tsconfigRootDir: __dirname,
+        tsconfigRootDir: new URL('.', import.meta.url).pathname,
       },
     },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin,
+    },
+    // Recommended "type-checked" rule sets
     rules: {
-      '@typescript-eslint/indent': 'off',
+      ...tseslint.configs.recommendedTypeChecked.rules,
+      ...tseslint.configs.stylisticTypeChecked.rules,
+      // '@typescript-eslint/no-explicit-any': 'off',
     },
   },
-);
+];
