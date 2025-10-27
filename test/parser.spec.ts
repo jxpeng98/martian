@@ -2,6 +2,7 @@ import * as md from '../src/markdown';
 import {text} from '../src/markdown';
 import * as notion from '../src/notion';
 import {parseBlocks, parseRichText} from '../src/parser/internal';
+import { describe, it, expect } from "bun:test";
 
 describe('gfm parser', () => {
   const options = {allowUnsupportedObjectType: false, strictImageUrls: true};

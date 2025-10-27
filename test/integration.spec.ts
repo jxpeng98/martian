@@ -2,6 +2,7 @@ import {markdownToBlocks, markdownToRichText} from '../src';
 import * as notion from '../src/notion';
 import fs from 'fs';
 import {LIMITS} from '../src/notion';
+import { describe, it, expect, mock, spyOn} from "bun:test";
 
 describe('markdown converter', () => {
   describe('markdownToBlocks', () => {
@@ -312,7 +313,7 @@ const hello = "hello";
       const text = Array(LIMITS.RICH_TEXT_ARRAYS + 10)
         .fill('a *a* ')
         .join('');
-      const spy = jest.fn();
+      const spy = mock(() => undefined);
 
       markdownToRichText(text, {
         notionLimits: {onError: spy},
