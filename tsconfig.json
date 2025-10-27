@@ -1,14 +1,18 @@
 {
   "extends": "./node_modules/gts/tsconfig-google.json",
   "compilerOptions": {
-    "lib": ["es2019", "dom"],
+    "lib": ["ES2020", "dom"],
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "rootDir": ".",
     "outDir": "build",
     "strict": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "declaration": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*.ts",
