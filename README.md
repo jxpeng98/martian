@@ -1,6 +1,6 @@
 # Martian: Markdown to Notion Parser
 
-Convert Markdown and GitHub Flavoured Markdown to Notion API Blocks and RichText.
+Convert Markdown and GitHub Flavoured Markdown to Notion API Blocks, RichText, and sync metadata.
 
 [![Node.js CI](https://github.com/tryfabric/martian/actions/workflows/ci.yml/badge.svg)](https://github.com/tryfabric/martian/actions/workflows/ci.yml)
 [![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.svg)](https://github.com/google/gts)
@@ -15,6 +15,7 @@ Designed to make using the Notion SDK and API easier. Notion API version 1.0.
 
 - All inline elements (italics, bold, strikethrough, inline code, hyperlinks, equations)
 - Lists (ordered, unordered, checkboxes) - to any level of depth
+  - Notion blocks support deeper nesting, but the `append block children` API only allows up to two levels of nesting per request payload
 - All headers (header levels >= 3 are treated as header level 3)
 - Code blocks, with language highlighting support
 - Block quotes
@@ -25,20 +26,35 @@ Designed to make using the Notion SDK and API easier. Notion API version 1.0.
 - Tables
 - Equations
 - Images
-  - Inline images are extracted from the paragraph and added afterwards (as these are not supported in notion)
-  - Image urls are validated, if they are not valid as per the Notion external spec, they will be inserted as text for you to fix manually
+  - Inline images are split into paragraph segments and asset blocks in their original order
+  - Image URLs are validated when rendering Notion image blocks; invalid external image URLs are inserted as text for you to fix manually
+- Files and PDFs in the sync pipeline
+  - Asset nodes can be preserved in the sync tree and later resolved through an `assetMap`
+  - PDFs render to Notion `pdf` blocks; known non-image attachments render to Notion `file` blocks
 
 ## Usage
 
 ### Basic usage:
 
-The package exports two functions, which you can import like this:
+The package exports block/rich-text helpers plus sync-aware APIs, which you can import like this:
 
 ```ts
 // JS
-const {markdownToBlocks, markdownToRichText} = require('@tryfabric/martian');
+const {
+  markdownToBlocks,
+  markdownToRichText,
+  markdownToSyncDocument,
+  syncDocumentToBlocks,
+  markdownToBlocksWithSync,
+} = require('@tryfabric/martian');
 // TS
-import {markdownToBlocks, markdownToRichText} from '@tryfabric/martian';
+import {
+  markdownToBlocks,
+  markdownToRichText,
+  markdownToSyncDocument,
+  syncDocumentToBlocks,
+  markdownToBlocksWithSync,
+} from '@tryfabric/martian';
 ```
 
 Here are couple of examples with both of them:
@@ -257,6 +273,84 @@ hello _world_
 </pre>
 </details>
 
+### Sync-aware usage
+
+If you need stable identities for block diffing or attachment upload workflows, use the sync APIs instead of only calling `markdownToBlocks()`.
+
+#### `markdownToSyncDocument()`
+
+Build a sync-aware intermediate tree with:
+
+- `syncKey`: stable logical identity
+- `contentHash`: whether the current node content changed
+- `subtreeHash`: whether the current node or any descendant changed
+- `source`: optional source range derived from mdast positions
+- `diagnostics`: warnings about unsupported or degraded sync behavior
+
+```ts
+const sync = markdownToSyncDocument(`# Title
+
+Paragraph
+
+![](attachments/report.pdf)`);
+
+console.log(sync.root[0].syncKey);
+console.log(sync.flat.map(node => node.nodeType));
+```
+
+#### `markdownToBlocksWithSync()`
+
+Parse once and get both the final blocks and the sync tree:
+
+```ts
+const {blocks, sync} = markdownToBlocksWithSync(markdown, {
+  strictImageUrls: true,
+  sync: {
+    includeSourceRange: true,
+  },
+});
+```
+
+#### `syncDocumentToBlocks()`
+
+Render a previously-built sync tree into final Notion blocks. This is useful when attachments are uploaded after parsing and you want to keep `syncKey` stable while swapping in the uploaded URLs.
+
+```ts
+const sync = markdownToSyncDocument(markdown);
+
+const blocks = syncDocumentToBlocks(sync, {
+  assetMap: {
+    'attachments/report.pdf': {
+      url: 'https://cdn.example.com/notion/report.pdf',
+      kind: 'pdf',
+    },
+    'attachments/spec.docx': {
+      url: 'https://cdn.example.com/notion/spec.docx',
+      kind: 'file',
+      name: 'spec.docx',
+    },
+  },
+});
+```
+
+#### Stable vs opaque sync nodes
+
+Current high-quality sync keys are generated for:
+
+- headings
+- paragraph segments
+- bulleted / numbered / todo list items
+- image / pdf / file assets
+- quotes / callouts
+- dividers
+
+These nodes currently render correctly but are treated as opaque sync regions, so diffing should rebuild the subtree if they change:
+
+- tables
+- code blocks
+- equations
+- table of contents blocks
+
 ### Working with blockquotes
 
 Martian supports three types of blockquotes:
@@ -388,7 +482,7 @@ markdownToBlocks('> [!NOTE]\n> Important information');
       ],
       "icon": {
         "type": "emoji",
-        "emoji": "ℹ️"
+        "emoji": "📘"
       },
       "color": "blue_background",
       "children": [
@@ -467,6 +561,8 @@ markdownToBlocks('input', options);
 markdownToRichText('input', options);
 ```
 
+Deeply nested list blocks are still produced by the parser. If you send them to Notion through `PATCH /v1/blocks/{block_id}/children`, note that Notion's official API only accepts up to two nested levels in a single append request, so deeper trees must be appended in multiple requests.
+
 #### Manually handling errors related to Notions's limits
 
 You can set a callback for when one of the resulting items would exceed Notion's limits. Please note that this function will be called regardless of whether the final output will be truncated.
@@ -488,8 +584,14 @@ markdownToRichText('input', options);
 
 ### Working with images
 
-If an image as an invalid URL, the Notion API will reject the whole request: `martian` prevents this issue by converting images with invalid links into text, so that request are successfull and you can fix the links later.  
-If you want to disable this kind of behavior, you can use this option:
+If an image has an invalid external URL, the Notion API will reject the whole request. `martian` prevents this issue by converting unresolved image blocks into text, so that requests stay valid and you can fix the links later.
+
+This validation happens when rendering final Notion blocks:
+
+- `markdownToBlocks()` applies it immediately
+- `syncDocumentToBlocks()` applies it when projecting a `SyncDocument`
+
+If you want to disable this behavior, you can use this option:
 
 ```ts
 const options = {
@@ -558,6 +660,50 @@ markdownToBlocks('![](InvalidURL)', {
 ]
 </pre>
 </details>
+
+### Working with attachments in the sync pipeline
+
+`markdownToSyncDocument()` preserves Markdown assets as sync nodes even when they are not yet valid Notion URLs. This is useful when another tool uploads local files first and only later knows the final Notion-compatible URL.
+
+Known behavior:
+
+- image extensions such as `.png`, `.jpg`, `.webp` are treated as image assets
+- `.pdf` is treated as a Notion `pdf` block
+- known document/media/archive extensions such as `.docx`, `.md`, `.mp4`, `.zip` are treated as Notion `file` blocks
+- unresolved local assets will fall back to text when rendered without an `assetMap` in strict mode
+
+Example:
+
+```ts
+const sync = markdownToSyncDocument('![](attachments/spec.docx)');
+
+const blocks = syncDocumentToBlocks(sync, {
+  assetMap: {
+    'attachments/spec.docx': {
+      url: 'https://cdn.example.com/notion/spec.docx',
+      kind: 'file',
+      name: 'spec.docx',
+    },
+  },
+});
+```
+
+#### Sync options
+
+`markdownToSyncDocument()` and `markdownToBlocksWithSync()` accept these sync-specific options:
+
+- `includeSourceRange`: include mdast-derived source positions in each sync node
+- `keyStrategy`: use `"semantic"` or `"semantic-with-position"` fallback keys
+- `textAnchorLength`: control how much normalized text is used to build semantic anchors
+- `slugify`: customize slug generation
+- `normalizeText`: customize text normalization before semantic-key generation
+- `explicitAnchorPattern`: extract explicit anchors from text with a regex
+- `extractExplicitAnchor`: provide a custom explicit-anchor extractor
+
+`syncDocumentToBlocks()` and `markdownToBlocksWithSync()` also accept:
+
+- `assetMap`: map original asset refs to uploaded URLs and optional `kind` / `name`
+- `strictImageUrls`: keep strict external image validation enabled or disabled during final block rendering
 
 ### Non-inline elements when parsing rich text
 

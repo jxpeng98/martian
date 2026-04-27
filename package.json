@@ -14,7 +14,7 @@
   "types": "build/src/index.d.ts",
   "scripts": {
     "dev": "bun run src/index.ts",
-    "test": "bun test",
+    "test": "bun test ./test/**/*.ts",
     "lint": "bun x eslint .",
     "clean": "bun x rimraf build",
     "precompile": "tsx scripts/languageMap.ts",
@@ -23,7 +23,7 @@
     "prepare": "bun run compile",
     "pretest": "bun run compile",
     "posttest": "bun run lint",
-    "ci-check": "rm -rf dist node_modules .bun && bun install --frozen-lockfile && bun run compile && bun test && bun run lint"
+    "ci-check": "rm -rf dist node_modules .bun && bun install --frozen-lockfile && bun run compile && bun run test && bun run lint"
   },
   "keywords": ["markdown", "notion", "parser", "gfm"],
   "engines": {
