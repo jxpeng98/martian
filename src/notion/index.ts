@@ -26,9 +26,9 @@ export function parseCalloutEmoji(
   // Get the first line of text
   const firstLine = text.split('\n')[0];
 
-  // Match text that starts with an emoji (with optional variation selector)
+  // Match a leading emoji grapheme, including skin tone modifiers and ZWJ sequences.
   const match = firstLine.match(
-    /^([\p{Emoji_Presentation}\p{Extended_Pictographic}][\u{FE0F}\u{FE0E}]?).*$/u,
+    /^((?:\p{Extended_Pictographic}(?:[\u{FE0F}\u{FE0E}])?(?:\p{Emoji_Modifier})?(?:\u{200D}\p{Extended_Pictographic}(?:[\u{FE0F}\u{FE0E}])?(?:\p{Emoji_Modifier})?)*)).*$/u,
   );
 
   if (!match) return null;

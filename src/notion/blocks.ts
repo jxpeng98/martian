@@ -90,6 +90,35 @@ export function image(url: string): Block {
   };
 }
 
+export function pdf(url: string): Block {
+  return {
+    object: 'block',
+    type: 'pdf',
+    pdf: {
+      type: 'external',
+      external: {
+        url,
+      },
+      caption: [],
+    },
+  } as Block;
+}
+
+export function file(url: string, name?: string): Block {
+  return {
+    object: 'block',
+    type: 'file',
+    file: {
+      type: 'external',
+      external: {
+        url,
+      },
+      caption: [],
+      name,
+    },
+  } as Block;
+}
+
 export function table_of_contents(): Block {
   return {
     object: 'block',
@@ -130,13 +159,16 @@ export function headingThree(text: RichText[]): Block {
 
 export function bulletedListItem(
   text: RichText[],
-  children: BlockWithoutChildren[] = [],
+  children: Block[] = [],
 ): Block {
   return {
     object: 'block',
     type: 'bulleted_list_item',
     bulleted_list_item: {
       rich_text: text,
+      // Notion accepts nested list children, but the SDK types only model
+      // a single request's two-level append payload.
+      // @ts-expect-error Typings are not recursive enough for deeper nesting
       children: children.length ? children : undefined,
     },
   };
@@ -144,13 +176,16 @@ export function bulletedListItem(
 
 export function numberedListItem(
   text: RichText[],
-  children: BlockWithoutChildren[] = [],
+  children: Block[] = [],
 ): Block {
   return {
     object: 'block',
     type: 'numbered_list_item',
     numbered_list_item: {
       rich_text: text,
+      // Notion accepts nested list children, but the SDK types only model
+      // a single request's two-level append payload.
+      // @ts-expect-error Typings are not recursive enough for deeper nesting
       children: children.length ? children : undefined,
     },
   };
@@ -159,7 +194,7 @@ export function numberedListItem(
 export function toDo(
   checked: boolean,
   text: RichText[],
-  children: BlockWithoutChildren[] = [],
+  children: Block[] = [],
 ): Block {
   return {
     object: 'block',
@@ -167,6 +202,9 @@ export function toDo(
     to_do: {
       rich_text: text,
       checked: checked,
+      // Notion accepts nested list children, but the SDK types only model
+      // a single request's two-level append payload.
+      // @ts-expect-error Typings are not recursive enough for deeper nesting
       children: children.length ? children : undefined,
     },
   };

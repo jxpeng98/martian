@@ -1,376 +1,10 @@
 import * as md from '../markdown';
 import * as notion from '../notion';
-import path from 'path';
-import {URL} from 'url';
-import {isSupportedCodeLang, LIMITS} from '../notion';
-
-function ensureLength(text: string, copy?: object) {
-  const chunks = text.match(/[^]{1,2000}/g) || [];
-  return chunks.flatMap((item: string) => notion.richText(item, copy));
-}
-
-function ensureCodeBlockLanguage(lang?: string) {
-  if (lang) {
-    lang = lang.toLowerCase();
-    return isSupportedCodeLang(lang) ? lang : notion.parseCodeLanguage(lang);
-  }
-
-  return undefined;
-}
-
-function parseInline(
-  element: md.PhrasingContent,
-  options?: notion.RichTextOptions,
-): notion.RichText[] {
-  const copy = {
-    annotations: {
-      ...(options?.annotations ?? {}),
-    },
-    url: options?.url,
-  };
-
-  switch (element.type) {
-    case 'text':
-      return ensureLength(element.value, copy);
-
-    case 'delete':
-      copy.annotations.strikethrough = true;
-      return element.children.flatMap(child => parseInline(child, copy));
-
-    case 'emphasis':
-      copy.annotations.italic = true;
-      return element.children.flatMap(child => parseInline(child, copy));
-
-    case 'strong':
-      copy.annotations.bold = true;
-      return element.children.flatMap(child => parseInline(child, copy));
-
-    case 'link':
-      copy.url = element.url;
-      return element.children.flatMap(child => parseInline(child, copy));
-
-    case 'inlineCode':
-      copy.annotations.code = true;
-      return [notion.richText(element.value, copy)];
-
-    case 'inlineMath':
-      return [notion.richText(element.value, {...copy, type: 'equation'})];
-
-    default:
-      return [];
-  }
-}
-
-function parseImage(image: md.Image, options: BlocksOptions): notion.Block {
-  // https://developers.notion.com/reference/block#image-blocks
-  const allowedTypes = [
-    '.png',
-    '.jpg',
-    '.jpeg',
-    '.gif',
-    '.tif',
-    '.tiff',
-    '.bmp',
-    '.svg',
-    '.heic',
-    '.webp',
-  ];
-
-  function dealWithError() {
-    return notion.paragraph([notion.richText(image.url)]);
-  }
-
-  try {
-    if (options.strictImageUrls ?? true) {
-      const parsedUrl = new URL(image.url);
-      const fileType = path.extname(parsedUrl.pathname);
-      if (allowedTypes.includes(fileType)) {
-        return notion.image(image.url);
-      } else {
-        return dealWithError();
-      }
-    } else {
-      return notion.image(image.url);
-    }
-  } catch (error: unknown) {
-    return dealWithError();
-  }
-}
-
-function parseParagraph(
-  element: md.Paragraph,
-  options: BlocksOptions,
-): notion.Block[] {
-  // Paragraphs can also be legacy 'TOC' from some markdown, so we check first
-  const mightBeToc =
-    element.children.length > 2 &&
-    element.children[0].type === 'text' &&
-    element.children[0].value === '[[' &&
-    element.children[1].type === 'emphasis';
-  if (mightBeToc) {
-    const emphasisItem = element.children[1] as md.Emphasis;
-    const emphasisTextItem = emphasisItem.children[0] as md.Text;
-    if (emphasisTextItem.value === 'TOC') {
-      return [notion.table_of_contents()];
-    }
-  }
-
-  // Notion doesn't deal with inline images, so we need to parse them all out
-  // of the paragraph into individual blocks
-  const images: notion.Block[] = [];
-  const paragraphs: notion.RichText[][] = [];
-  let currentParagraph: notion.RichText[] = [];
-
-  const pushParagraph = () => {
-    if (currentParagraph.length > 0) {
-      paragraphs.push(currentParagraph);
-      currentParagraph = [];
-    }
-  };
-
-  element.children.forEach(item => {
-    if (item.type === 'image') {
-      images.push(parseImage(item, options));
-      return;
-    }
-
-    if (item.type === 'break') {
-      pushParagraph();
-      return;
-    }
-
-    const richText = parseInline(item) as notion.RichText[];
-    currentParagraph.push(...richText);
-  });
-
-  pushParagraph();
-
-  return [...paragraphs.map(notion.paragraph), ...images];
-}
-
-function parseBlockquote(
-  element: md.Blockquote,
-  options: BlocksOptions,
-): notion.Block {
-  const firstChild = element.children[0];
-  const firstTextNode =
-    firstChild?.type === 'paragraph'
-      ? (firstChild as md.Paragraph).children[0]
-      : null;
-
-  if (firstTextNode?.type === 'text') {
-    // Helper to parse subsequent blocks
-    const parseSubsequentBlocks = () =>
-      element.children.length > 1
-        ? element.children.slice(1).flatMap(child => parseNode(child, options))
-        : [];
-
-    // Check for GFM alert syntax first (both escaped and unescaped)
-    const firstLine = firstTextNode.value.split('\n')[0];
-    const gfmMatch = firstLine.match(
-      /^(?:\\\[|\[)!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/,
-    );
-
-    if (gfmMatch) {
-      const alertType = gfmMatch[1].toUpperCase();
-      if (notion.isGfmAlertType(alertType)) {
-        const alertConfig = notion.GFM_ALERT_MAP[alertType];
-        const displayType = alertConfig.title;
-
-        const children = [];
-        const contentLines = firstTextNode.value.split('\n').slice(1);
-
-        if (contentLines.length > 0) {
-          children.push(
-            notion.paragraph(
-              parseInline({
-                type: 'text',
-                value: contentLines.join('\n'),
-              }),
-            ),
-          );
-        }
-
-        children.push(...parseSubsequentBlocks());
-
-        return notion.callout(
-          [notion.richText(displayType)],
-          alertConfig.emoji,
-          alertConfig.color,
-          children,
-        );
-      }
-    }
-
-    const obsidianMatch = firstTextNode.value.match(
-      /^\[!([a-z]+)\](?:[+-])?\s*/i,
-    );
-
-    if (obsidianMatch) {
-      const calloutType = obsidianMatch[1].toUpperCase();
-      if (notion.isGfmAlertType(calloutType)) {
-        const calloutConfig = notion.GFM_ALERT_MAP[calloutType];
-        const paragraph = firstChild as md.Paragraph;
-        const remainingFirstText = firstTextNode.value.slice(
-          obsidianMatch[0].length,
-        );
-
-        const richText = paragraph.children.flatMap(child =>
-          child === firstTextNode
-            ? remainingFirstText
-              ? parseInline({type: 'text', value: remainingFirstText})
-              : []
-            : parseInline(child),
-        );
-
-        if (richText.length === 0) {
-          richText.push(notion.richText(calloutConfig.title));
-        }
-
-        return notion.callout(
-          richText,
-          calloutConfig.emoji,
-          calloutConfig.color,
-          parseSubsequentBlocks(),
-        );
-      }
-    }
-
-    // Check for emoji syntax if enabled
-    if (options.enableEmojiCallouts) {
-      const emojiData = notion.parseCalloutEmoji(firstTextNode.value);
-      if (emojiData) {
-        const paragraph = firstChild as md.Paragraph;
-        const textWithoutEmoji = firstTextNode.value
-          .slice(emojiData.emoji.length)
-          .trimStart();
-
-        // Process inline content from first paragraph
-        const richText = paragraph.children.flatMap(child =>
-          child === firstTextNode
-            ? textWithoutEmoji
-              ? parseInline({type: 'text', value: textWithoutEmoji})
-              : []
-            : parseInline(child),
-        );
-
-        return notion.callout(
-          richText,
-          emojiData.emoji,
-          emojiData.color,
-          parseSubsequentBlocks(),
-        );
-      }
-    }
-  }
-
-  const children = element.children.flatMap(child => parseNode(child, options));
-  return notion.blockquote([], children);
-}
-
-function parseHeading(element: md.Heading): notion.Block {
-  const text = element.children.flatMap(child => parseInline(child));
-
-  switch (element.depth) {
-    case 1:
-      return notion.headingOne(text);
-
-    case 2:
-      return notion.headingTwo(text);
-
-    default:
-      return notion.headingThree(text);
-  }
-}
-
-function parseCode(element: md.Code): notion.Block {
-  const text = ensureLength(element.value);
-  const lang = ensureCodeBlockLanguage(element.lang);
-  return notion.code(text, lang);
-}
-
-function parseList(element: md.List, options: BlocksOptions): notion.Block[] {
-  return element.children.flatMap(item => {
-    const paragraph = item.children.shift();
-    if (paragraph === undefined || paragraph.type !== 'paragraph') {
-      return [] as notion.Block[];
-    }
-
-    const text = paragraph.children.flatMap(child => parseInline(child));
-
-    // Now process any of the children
-    const parsedChildren: notion.BlockWithoutChildren[] = item.children.flatMap(
-      child =>
-        parseNode(child, options) as unknown as notion.BlockWithoutChildren,
-    );
-
-    if (element.start !== null && element.start !== undefined) {
-      return [notion.numberedListItem(text, parsedChildren)];
-    } else if (item.checked !== null && item.checked !== undefined) {
-      return [notion.toDo(item.checked, text, parsedChildren)];
-    } else {
-      return [notion.bulletedListItem(text, parsedChildren)];
-    }
-  });
-}
-
-function parseTableCell(node: md.TableCell): notion.RichText[] {
-  return node.children.flatMap(child => parseInline(child));
-}
-
-function parseTableRow(node: md.TableRow): notion.TableRowBlock {
-  const cells = node.children.map(child => parseTableCell(child));
-  return notion.tableRow(cells);
-}
-
-function parseTable(node: md.Table): notion.Block[] {
-  // The width of the table is the amount of cells in the first row, as all rows must have the same number of cells
-  const tableWidth = node.children?.length
-    ? node.children[0].children.length
-    : 0;
-
-  const tableRows = node.children.map(child => parseTableRow(child));
-  return [notion.table(tableRows, tableWidth)];
-}
-
-function parseMath(node: md.Math): notion.Block {
-  const textWithKatexNewlines = node.value.split('\n').join('\n');
-  return notion.equation(textWithKatexNewlines);
-}
-
-function parseNode(
-  node: md.FlowContent,
-  options: BlocksOptions,
-): notion.Block[] {
-  switch (node.type) {
-    case 'heading':
-      return [parseHeading(node)];
-
-    case 'paragraph':
-      return parseParagraph(node, options);
-
-    case 'code':
-      return [parseCode(node)];
-
-    case 'blockquote':
-      return [parseBlockquote(node, options)];
-
-    case 'list':
-      return parseList(node, options);
-
-    case 'table':
-      return parseTable(node);
-
-    case 'math':
-      return [parseMath(node)];
-
-    case 'thematicBreak':
-      return [notion.divider()];
-
-    default:
-      return [];
-  }
-}
+import {LIMITS} from '../notion';
+import {parseInline} from './shared';
+import {buildSyncDocument} from '../sync/build';
+import {syncDocumentToBlocks} from '../sync/render';
+import type {SyncOptions} from '../sync/types';
 
 /** Options common to all methods. */
 export interface CommonOptions {
@@ -397,25 +31,6 @@ export interface BlocksOptions extends CommonOptions {
   enableEmojiCallouts?: boolean;
 }
 
-export function parseBlocks(
-  root: md.Root,
-  options?: BlocksOptions,
-): notion.Block[] {
-  const parsed = root.children.flatMap(item => parseNode(item, options || {}));
-
-  const truncate = !!(options?.notionLimits?.truncate ?? true),
-    limitCallback = options?.notionLimits?.onError ?? (() => {});
-
-  if (parsed.length > LIMITS.PAYLOAD_BLOCKS)
-    limitCallback(
-      new Error(
-        `Resulting blocks array exceeds Notion limit (${LIMITS.PAYLOAD_BLOCKS})`,
-      ),
-    );
-
-  return truncate ? parsed.slice(0, LIMITS.PAYLOAD_BLOCKS) : parsed;
-}
-
 export interface RichTextOptions extends CommonOptions {
   /**
    * How to behave when a non-inline element is detected:
@@ -423,6 +38,21 @@ export interface RichTextOptions extends CommonOptions {
    * - `throw`: throw an error
    */
   nonInline?: 'ignore' | 'throw';
+}
+
+export function parseBlocks(
+  root: md.Root,
+  options?: BlocksOptions,
+): notion.Block[] {
+  const syncOptions: SyncOptions = {
+    strictImageUrls: options?.strictImageUrls,
+    enableEmojiCallouts: options?.enableEmojiCallouts,
+  };
+  const doc = buildSyncDocument(root, syncOptions);
+  return syncDocumentToBlocks(doc, {
+    strictImageUrls: options?.strictImageUrls,
+    notionLimits: options?.notionLimits,
+  });
 }
 
 export function parseRichText(
@@ -468,14 +98,11 @@ export function parseRichText(
       rt.text.link?.url &&
       rt.text.link.url.length > LIMITS.RICH_TEXT.LINK_URL
     )
-      // There's no point in truncating URLs
       limitCallback(
         new Error(
           `Resulting text URL exceeds Notion limit (${LIMITS.RICH_TEXT.LINK_URL})`,
         ),
       );
-
-    // Notion equations are not supported by this library, since they don't exist in Markdown
 
     return rt;
   });

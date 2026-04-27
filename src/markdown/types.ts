@@ -2,11 +2,11 @@
 
 import type {Node} from 'unist';
 
-export interface Parent {
+export interface Parent extends Node {
   children: MdastContent[];
 }
 
-export interface Literal {
+export interface Literal extends Node {
   value: string;
 }
 
@@ -117,7 +117,7 @@ export interface ImageReference extends Node {
   type: 'imageReference';
 }
 
-export interface Resource {
+export interface Resource extends Node {
   url: string;
   title?: string;
 }

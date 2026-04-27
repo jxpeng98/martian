@@ -244,6 +244,26 @@ describe('gfm parser', () => {
     expect(actual).toStrictEqual(expected);
   });
 
+  it('should parse emoji callouts with zwj emoji sequences', () => {
+    const ast = md.root(
+      md.blockquote(md.paragraph(md.text('👨‍💻 Ship it'))),
+    );
+
+    const actual = parseBlocks(ast, {
+      ...options,
+      enableEmojiCallouts: true,
+    });
+
+    expect(actual).toStrictEqual([
+      notion.callout(
+        [notion.richText('Ship it')],
+        '👨‍💻',
+        'default',
+        [],
+      ),
+    ]);
+  });
+
   it('should parse list', () => {
     const ast = md.root(
       md.paragraph(md.text('hello')),
@@ -270,6 +290,76 @@ describe('gfm parser', () => {
     ];
 
     expect(actual).toStrictEqual(expected);
+  });
+
+  it('should not mutate list AST when parsing repeatedly', () => {
+    const ast = md.root(
+      md.unorderedList(
+        md.listItem(
+          md.paragraph(md.text('a')),
+          md.unorderedList(md.listItem(md.paragraph(md.text('b')))),
+        ),
+      ),
+    );
+
+    const first = parseBlocks(ast, options);
+    const second = parseBlocks(ast, options);
+
+    expect(second).toStrictEqual(first);
+  });
+
+  it('should preserve inline image ordering when splitting a paragraph', () => {
+    const ast = md.root(
+      md.paragraph(
+        md.text('before '),
+        md.image('https://example.com/image.jpg', '', ''),
+        md.text(' after'),
+      ),
+    );
+
+    const actual = parseBlocks(ast, options);
+
+    const expected = [
+      notion.paragraph([notion.richText('before ')]),
+      notion.image('https://example.com/image.jpg'),
+      notion.paragraph([notion.richText(' after')]),
+    ];
+
+    expect(actual).toStrictEqual(expected);
+  });
+
+  it('should render external pdf assets as pdf blocks', () => {
+    const ast = md.root(
+      md.paragraph(md.image('https://example.com/report.pdf', '', '')),
+    );
+
+    const actual = parseBlocks(ast, options);
+
+    expect(actual).toStrictEqual([notion.pdf('https://example.com/report.pdf')]);
+  });
+
+  it('should keep non-paragraph list item content as children instead of dropping it', () => {
+    const ast = md.root(
+      md.unorderedList(md.listItem(md.code('const x = 1;', 'ts'))),
+    );
+
+    const actual = parseBlocks(ast, options);
+
+    expect(actual).toHaveLength(1);
+    expect(actual[0]).toMatchObject({
+      type: 'bulleted_list_item',
+      bulleted_list_item: {
+        rich_text: [],
+        children: [
+          {
+            type: 'code',
+            code: {
+              language: 'typescript',
+            },
+          },
+        ],
+      },
+    });
   });
 
   it('should split paragraphs on hard line breaks', () => {
@@ -454,6 +544,28 @@ describe('gfm parser', () => {
     ];
 
     expect(actual).toStrictEqual(expected);
+  });
+
+  it('should preserve inline formatting after a GFM alert marker in the same paragraph', () => {
+    const ast = md.root(
+      md.blockquote(
+        md.paragraph(
+          md.text('[!NOTE]\nThis is '),
+          md.emphasis(md.text('important')),
+        ),
+      ),
+    );
+
+    const actual = parseBlocks(ast, options);
+
+    expect(actual).toStrictEqual([
+      notion.callout([notion.richText('Note')], '📘', 'blue_background', [
+        notion.paragraph([
+          notion.richText('This is '),
+          notion.richText('important', {annotations: {italic: true}}),
+        ]),
+      ]),
+    ]);
   });
 
   it('should parse Obsidian callout with inline title and formatting', () => {

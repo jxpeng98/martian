@@ -130,10 +130,26 @@ const hello = "hello";
         notion.headingOne([notion.richText('List')]),
         notion.bulletedListItem(
           [notion.richText('Item 1')],
-          // @ts-expect-error This problem is being addressed in issue #15 (https://github.com/tryfabric/martian/issues/15)
           [notion.bulletedListItem([notion.richText('Sub Item 1')])],
         ),
         notion.bulletedListItem([notion.richText('Item 2')]),
+      ];
+
+      expect(actual).toStrictEqual(expected);
+    });
+
+    it('should support bulleted lists deeper than three levels', () => {
+      const text = '- Level 1\n  - Level 2\n    - Level 3\n      - Level 4';
+      const actual = markdownToBlocks(text);
+
+      const expected = [
+        notion.bulletedListItem([notion.richText('Level 1')], [
+          notion.bulletedListItem([notion.richText('Level 2')], [
+            notion.bulletedListItem([notion.richText('Level 3')], [
+              notion.bulletedListItem([notion.richText('Level 4')]),
+            ]),
+          ]),
+        ]),
       ];
 
       expect(actual).toStrictEqual(expected);
@@ -174,9 +190,9 @@ const hello = "hello";
         notion.headingOne([notion.richText('Images')]),
         notion.paragraph([
           notion.richText('This is an image in a paragraph '),
-          notion.richText(', which isnt supported in Notion.'),
         ]),
         notion.image('https://image.com/url.jpg'),
+        notion.paragraph([notion.richText(', which isnt supported in Notion.')]),
         notion.image('https://image.com/paragraph.jpg'),
         notion.paragraph([notion.richText('https://image.com/blah')]),
       ];
@@ -192,9 +208,9 @@ const hello = "hello";
         notion.headingOne([notion.richText('Images')]),
         notion.paragraph([
           notion.richText('This is an image in a paragraph '),
-          notion.richText(', which isnt supported in Notion.'),
         ]),
         notion.image('https://image.com/url.jpg'),
+        notion.paragraph([notion.richText(', which isnt supported in Notion.')]),
         notion.image('https://image.com/paragraph.jpg'),
         notion.image('https://image.com/blah'),
       ];
@@ -216,7 +232,6 @@ const hello = "hello";
         ]),
         notion.equation('L = \\frac{1}{2} \\rho v^2 S C_L \\\\\ntest'),
       ];
-      console.log(expected);
       expect(actual).toStrictEqual(expected);
     });
 
