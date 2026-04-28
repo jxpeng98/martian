@@ -4,6 +4,7 @@ import lm from './languageMap.json';
 
 export * from './blocks';
 export * from './common';
+export * from './upload';
 
 export function parseCodeLanguage(
   lang?: string,

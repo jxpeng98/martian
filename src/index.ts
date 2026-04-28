@@ -92,5 +92,5 @@ export function markdownToBlocksWithSync(
 
 export {LIMITS} from './notion';
 
-export {paragraph} from './notion';
+export {appendBlocksDeep, paragraph} from './notion';
 export type {SyncDocument, SyncOptions, SyncRenderOptions} from './sync';
