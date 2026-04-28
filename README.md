@@ -41,6 +41,7 @@ The package exports block/rich-text helpers plus sync-aware APIs, which you can 
 ```ts
 // JS
 const {
+  appendBlocksDeep,
   markdownToBlocks,
   markdownToRichText,
   markdownToSyncDocument,
@@ -49,6 +50,7 @@ const {
 } = require('@tryfabric/martian');
 // TS
 import {
+  appendBlocksDeep,
   markdownToBlocks,
   markdownToRichText,
   markdownToSyncDocument,
@@ -562,6 +564,25 @@ markdownToRichText('input', options);
 ```
 
 Deeply nested list blocks are still produced by the parser. If you send them to Notion through `PATCH /v1/blocks/{block_id}/children`, note that Notion's official API only accepts up to two nested levels in a single append request, so deeper trees must be appended in multiple requests.
+
+To upload a deeply nested tree produced by `martian`, use `appendBlocksDeep()`. It appends only the current level in each request, then recursively appends child levels with the created parent block IDs:
+
+```ts
+import {Client} from '@notionhq/client';
+import {appendBlocksDeep, markdownToBlocks} from '@tryfabric/martian';
+
+const notion = new Client({auth: process.env.NOTION_API_KEY});
+const blocks = markdownToBlocks(`
+- Level 1
+  - Level 2
+    - Level 3
+      - Level 4
+`);
+
+await appendBlocksDeep(notion, process.env.NOTION_PAGE_ID!, blocks);
+```
+
+`appendBlocksDeep()` also chunks sibling appends to Notion's current maximum of 100 children per request.
 
 #### Manually handling errors related to Notions's limits
 
