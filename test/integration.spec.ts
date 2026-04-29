@@ -2,7 +2,7 @@ import {markdownToBlocks, markdownToRichText} from '../src';
 import * as notion from '../src/notion';
 import fs from 'fs';
 import {LIMITS} from '../src/notion';
-import { describe, it, expect, mock, spyOn} from "bun:test";
+import {describe, expect, it, vi} from 'vitest';
 
 describe('markdown converter', () => {
   describe('markdownToBlocks', () => {
@@ -328,7 +328,7 @@ const hello = "hello";
       const text = Array(LIMITS.RICH_TEXT_ARRAYS + 10)
         .fill('a *a* ')
         .join('');
-      const spy = mock(() => undefined);
+      const spy = vi.fn(() => undefined);
 
       markdownToRichText(text, {
         notionLimits: {onError: spy},

@@ -84,6 +84,8 @@
   "proto": "protobuf",
   "protocol buffers": "protobuf",
   "python": "python",
+  "py": "python",
+  "py3": "python",
   "python3": "python",
   "rusthon": "python",
   "r": "r",

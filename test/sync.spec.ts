@@ -2,7 +2,7 @@ import * as md from '../src/markdown';
 import * as notion from '../src/notion';
 import {buildSyncDocument} from '../src/sync/build';
 import {syncDocumentToBlocks} from '../src/sync/render';
-import {describe, expect, it} from 'bun:test';
+import {describe, expect, it} from 'vitest';
 
 describe('sync document', () => {
   it('should build stable sync keys for headings and scoped paragraphs', () => {

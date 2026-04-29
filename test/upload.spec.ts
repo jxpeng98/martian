@@ -1,7 +1,7 @@
 import * as notion from '../src/notion';
 import {appendBlocksDeep} from '../src/notion/upload';
-import {describe, expect, it} from 'bun:test';
 import type {AppendBlockChildrenResponse} from '@notionhq/client/build/src/api-endpoints';
+import {describe, expect, it} from 'vitest';
 
 describe('appendBlocksDeep', () => {
   it('should append deeply nested list items across multiple requests', async () => {
