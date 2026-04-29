@@ -25,7 +25,11 @@
     "posttest": "pnpm run lint",
     "ci-check": "rm -rf dist node_modules && pnpm install --frozen-lockfile && pnpm run compile && pnpm run test && pnpm run lint",
     "bump:prerelease": "pnpm version prerelease --preid beta",
-    "publish:beta": "pnpm publish --tag beta --no-git-checks"
+    "bump:release": "pnpm version patch",
+    "bump:release:minor": "pnpm version minor",
+    "bump:release:major": "pnpm version major",
+    "publish:beta": "pnpm publish --tag beta --no-git-checks",
+    "publish:latest": "pnpm publish --no-git-checks"
   },
   "keywords": ["markdown", "notion", "parser", "gfm"],
   "engines": {
