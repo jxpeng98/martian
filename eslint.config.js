@@ -2,6 +2,11 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
+const nodeGlobals = {
+  console: 'readonly',
+  process: 'readonly',
+};
+
 export default [
   // 1) Ignore directories/files (including this file)
   {
@@ -16,6 +21,13 @@ export default [
   {
     files: ['**/*.{js,mjs,cjs}'],
     ...js.configs.recommended,
+    languageOptions: {
+      ...(js.configs.recommended.languageOptions ?? {}),
+      globals: {
+        ...((js.configs.recommended.languageOptions?.globals ?? {})),
+        ...nodeGlobals,
+      },
+    },
   },
 
   // 3) TS files: enable rules with type information
