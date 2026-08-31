@@ -39,16 +39,6 @@ Designed to make using the Notion SDK and API easier. Notion API version 1.0.
 The package exports block/rich-text helpers plus sync-aware APIs, which you can import like this:
 
 ```ts
-// JS
-const {
-  appendBlocksDeep,
-  markdownToBlocks,
-  markdownToRichText,
-  markdownToSyncDocument,
-  syncDocumentToBlocks,
-  markdownToBlocksWithSync,
-} = require('@tryfabric/martian');
-// TS
 import {
   appendBlocksDeep,
   markdownToBlocks,
@@ -56,10 +46,10 @@ import {
   markdownToSyncDocument,
   syncDocumentToBlocks,
   markdownToBlocksWithSync,
-} from '@tryfabric/martian';
+} from '@jxpeng98/martian';
 ```
 
-Here are couple of examples with both of them:
+Here are a couple of examples:
 
 ```ts
 markdownToRichText(`**Hello _world_**`);
@@ -277,7 +267,7 @@ hello _world_
 
 ### Sync-aware usage
 
-If you need stable identities for block diffing or attachment upload workflows, use the sync APIs instead of only calling `markdownToBlocks()`.
+If you need stable identities for block diffing or attachment upload workflows, use the sync APIs instead of only calling `markdownToBlocks()`. The sync runtime avoids Node-only built-ins so the same parser can run in Obsidian mobile and browser bundles.
 
 #### `markdownToSyncDocument()`
 
@@ -569,7 +559,7 @@ To upload a deeply nested tree produced by `martian`, use `appendBlocksDeep()`. 
 
 ```ts
 import {Client} from '@notionhq/client';
-import {appendBlocksDeep, markdownToBlocks} from '@tryfabric/martian';
+import {appendBlocksDeep, markdownToBlocks} from '@jxpeng98/martian';
 
 const notion = new Client({auth: process.env.NOTION_API_KEY});
 const blocks = markdownToBlocks(`
@@ -579,10 +569,18 @@ const blocks = markdownToBlocks(`
       - Level 4
 `);
 
-await appendBlocksDeep(notion, process.env.NOTION_PAGE_ID!, blocks);
+const result = await appendBlocksDeep(
+  notion,
+  process.env.NOTION_PAGE_ID!,
+  blocks,
+  {position: {type: 'end'}},
+);
+
+// Every created block is paired with its zero-based path in the input tree.
+console.log(result.blockMappings.map(({path, block}) => ({path, id: block.id})));
 ```
 
-`appendBlocksDeep()` also chunks sibling appends to Notion's current maximum of 100 children per request.
+`appendBlocksDeep()` uses the Notion `2026-03-11` `position` shape (`start`, `end`, or `after_block`) and chunks sibling appends to the current maximum of 100 children per request. The legacy `after` option remains accepted and is converted to `after_block`. Before matching returned blocks to input paths, it verifies that the response contains the same number of blocks and that every returned block has an ID; malformed responses fail before `onAppend` is called.
 
 #### Manually handling errors related to Notions's limits
 

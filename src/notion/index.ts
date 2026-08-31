@@ -1,10 +1,10 @@
-import {supportedCodeLang, SUPPORTED_EMOJI_COLOR_MAP} from './common';
-import type {EmojiRequest, ApiColor} from './blocks';
-import lm from './languageMap.json';
+import {supportedCodeLang, SUPPORTED_EMOJI_COLOR_MAP} from './common.js';
+import type {EmojiRequest, ApiColor} from './blocks.js';
+import lm from './languageMap.json' with {type: 'json'};
 
-export * from './blocks';
-export * from './common';
-export * from './upload';
+export * from './blocks.js';
+export * from './common.js';
+export * from './upload.js';
 
 export function parseCodeLanguage(
   lang?: string,

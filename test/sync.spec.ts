@@ -1,10 +1,23 @@
 import * as md from '../src/markdown';
 import * as notion from '../src/notion';
 import {buildSyncDocument} from '../src/sync/build';
+import {hashContent} from '../src/sync/identity';
 import {syncDocumentToBlocks} from '../src/sync/render';
+import {readFileSync} from 'node:fs';
 import {describe, expect, it} from 'vitest';
 
 describe('sync document', () => {
+  it('keeps the mobile runtime free of Node built-ins', () => {
+    const runtimeSources = ['build.ts', 'identity.ts', 'render.ts']
+      .map(file => readFileSync(new URL(`../src/sync/${file}`, import.meta.url), 'utf8'))
+      .join('\n');
+
+    expect(runtimeSources).not.toMatch(/from ['"](?:crypto|path|url)['"]/);
+    expect(hashContent({value: 'same'})).toBe(hashContent({value: 'same'}));
+    expect(hashContent({value: 'same'})).toBe('1d73fc8533b920a86fcfdb1556a341f3');
+    expect(hashContent({value: 'same'})).not.toBe(hashContent({value: 'different'}));
+  });
+
   it('should build stable sync keys for headings and scoped paragraphs', () => {
     const ast = md.root(
       md.heading(1, md.text('Section')),

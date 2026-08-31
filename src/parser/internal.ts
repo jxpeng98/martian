@@ -1,10 +1,10 @@
-import * as md from '../markdown';
-import * as notion from '../notion';
-import {LIMITS} from '../notion';
-import {parseInline} from './shared';
-import {buildSyncDocument} from '../sync/build';
-import {syncDocumentToBlocks} from '../sync/render';
-import type {SyncOptions} from '../sync/types';
+import * as md from '../markdown/index.js';
+import * as notion from '../notion/index.js';
+import {LIMITS} from '../notion/index.js';
+import {parseInline} from './shared.js';
+import {buildSyncDocument} from '../sync/build.js';
+import {syncDocumentToBlocks} from '../sync/render.js';
+import type {SyncOptions} from '../sync/types.js';
 
 /** Options common to all methods. */
 export interface CommonOptions {

@@ -1,4 +1,4 @@
-import type {RichText, EmojiRequest, ApiColor} from './blocks';
+import type {RichText, EmojiRequest, ApiColor} from './blocks.js';
 
 /**
  * The limits that the Notion API uses for property values.

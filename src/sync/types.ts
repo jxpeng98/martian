@@ -1,5 +1,5 @@
-import type * as notion from '../notion';
-import type {supportedCodeLang, TableRowBlock} from '../notion';
+import type * as notion from '../notion/index.js';
+import type {supportedCodeLang, TableRowBlock} from '../notion/index.js';
 
 export type SyncNodeType =
   | 'heading'

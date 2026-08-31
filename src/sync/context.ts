@@ -1,4 +1,4 @@
-import type {SyncDiagnostic, SyncOptions, SourceRange} from './types';
+import type {SyncDiagnostic, SyncOptions, SourceRange} from './types.js';
 
 interface MaybePositionedNode {
   position?: {

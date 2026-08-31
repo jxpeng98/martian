@@ -1,2 +1,2 @@
-export * from './ast';
-export * from './types';
+export * from './ast.js';
+export * from './types.js';

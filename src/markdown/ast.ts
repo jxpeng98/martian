@@ -23,7 +23,7 @@ import type {
   TableContent,
   Text,
   ThematicBreak,
-} from './types';
+} from './types.js';
 
 export function text(value: string): Text {
   return {

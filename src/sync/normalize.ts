@@ -1,4 +1,4 @@
-import type * as notion from '../notion';
+import type * as notion from '../notion/index.js';
 
 export function buildTextAnchor(
   text: string | undefined,

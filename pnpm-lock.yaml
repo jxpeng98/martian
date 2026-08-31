@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@notionhq/client':
-        specifier: ^5.3.0
-        version: 5.20.0
+        specifier: ^5.26.0
+        version: 5.26.0
       '@types/unist':
         specifier: ^3.0.3
         version: 3.0.3
@@ -283,8 +283,8 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
-  '@notionhq/client@5.20.0':
-    resolution: {integrity: sha512-MS0DFSfHPLZ0wi+e9mOP16gCCYbWAkaiMuu/rVK9KxDlKac4oAgHReOfTglcd77g/nlg78snp+KB7fNWP75bEw==}
+  '@notionhq/client@5.26.0':
+    resolution: {integrity: sha512-Oc3438nQ5YmZkVO7YJG8fcTYl0V46CirdCvO33azZ9f7ZfD2rsHE4fUVANJiBB9Xf1sqpCs82nd8oKPxeXLmMg==}
     engines: {node: '>=18'}
 
   '@rollup/rollup-android-arm-eabi@4.60.2':
@@ -1463,7 +1463,7 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
-  '@notionhq/client@5.20.0': {}
+  '@notionhq/client@5.26.0': {}
 
   '@rollup/rollup-android-arm-eabi@4.60.2':
     optional: true

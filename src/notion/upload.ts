@@ -2,10 +2,13 @@ import type {
   AppendBlockChildrenParameters,
   AppendBlockChildrenResponse,
 } from '@notionhq/client/build/src/api-endpoints';
-import type {Block} from './blocks';
+import type {Block} from './blocks.js';
 
 type AppendFn = (
-  args: Pick<AppendBlockChildrenParameters, 'block_id' | 'children' | 'after'>,
+  args: Pick<
+    AppendBlockChildrenParameters,
+    'block_id' | 'children' | 'position'
+  >,
 ) => Promise<AppendBlockChildrenResponse>;
 
 export interface BlockChildrenAppendClient {
@@ -17,19 +20,28 @@ export interface BlockChildrenAppendClient {
 }
 
 export interface AppendBlocksDeepOptions {
-  after?: AppendBlockChildrenParameters['after'];
+  position?: AppendBlockChildrenParameters['position'];
+  /** @deprecated Use `position: {type: 'after_block', ...}`. */
+  after?: string;
   batchSize?: number;
   onAppend?: (event: {
     parentId: string;
     depth: number;
     inputCount: number;
+    paths: number[][];
     result: AppendBlockChildrenResponse;
   }) => void | Promise<void>;
+}
+
+export interface AppendedBlockMapping {
+  path: number[];
+  block: AppendBlockChildrenResponse['results'][number];
 }
 
 export interface AppendBlocksDeepResult {
   topLevelBlocks: AppendBlockChildrenResponse['results'];
   appendedBlocks: AppendBlockChildrenResponse['results'];
+  blockMappings: AppendedBlockMapping[];
   requestCount: number;
 }
 
@@ -59,9 +71,14 @@ export async function appendBlocksDeep(
 ): Promise<AppendBlocksDeepResult> {
   const batchSize = normalizeBatchSize(options.batchSize);
   return appendBlocksDeepInternal(client, parentId, blocks, {
-    after: options.after,
+    position:
+      options.position ??
+      (options.after
+        ? {type: 'after_block', after_block: {id: options.after}}
+        : undefined),
     batchSize,
     depth: 0,
+    pathPrefix: [],
     onAppend: options.onAppend,
   });
 }
@@ -71,8 +88,9 @@ async function appendBlocksDeepInternal(
   parentId: string,
   blocks: Block[],
   context: Required<Pick<AppendBlocksDeepOptions, 'batchSize'>> & {
-    after?: AppendBlockChildrenParameters['after'];
+    position?: AppendBlockChildrenParameters['position'];
     depth: number;
+    pathPrefix: number[];
     onAppend?: AppendBlocksDeepOptions['onAppend'];
   },
 ): Promise<AppendBlocksDeepResult> {
@@ -80,36 +98,61 @@ async function appendBlocksDeepInternal(
     return {
       topLevelBlocks: [],
       appendedBlocks: [],
+      blockMappings: [],
       requestCount: 0,
     };
   }
 
   const topLevelBlocks: AppendBlockChildrenResponse['results'] = [];
   const appendedBlocks: AppendBlockChildrenResponse['results'] = [];
+  const blockMappings: AppendedBlockMapping[] = [];
   let requestCount = 0;
-  let after = context.after;
+  let position = context.position;
 
-  for (const batch of chunkBlocks(blocks, context.batchSize)) {
+  for (
+    let batchStart = 0;
+    batchStart < blocks.length;
+    batchStart += context.batchSize
+  ) {
+    const batch = blocks.slice(batchStart, batchStart + context.batchSize);
+    const paths = batch.map((_, index) => [
+      ...context.pathPrefix,
+      batchStart + index,
+    ]);
     const response = await client.blocks.children.append({
       block_id: parentId,
       children: batch.map(stripDeferredChildren),
-      after,
+      position,
     });
 
+    const created = response.results;
+    assertCreatedBlocks(created, batch.length, parentId, context.depth);
+
     requestCount += 1;
-    topLevelBlocks.push(...response.results);
-    appendedBlocks.push(...response.results);
+    topLevelBlocks.push(...created);
+    appendedBlocks.push(...created);
+    blockMappings.push(
+      ...created.map((block, index) => ({
+        path: paths[index],
+        block,
+      })),
+    );
 
     await context.onAppend?.({
       parentId,
       depth: context.depth,
       inputCount: batch.length,
+      paths,
       result: response,
     });
 
-    const created = response.results;
     const lastCreated = created.at(-1);
-    after = lastCreated?.id;
+    position = lastCreated?.id
+      ? {
+          type: 'after_block',
+          after_block: {id: lastCreated.id},
+        }
+      : undefined;
 
     for (const [index, originalBlock] of batch.entries()) {
       const createdBlock = created[index];
@@ -126,20 +169,45 @@ async function appendBlocksDeepInternal(
         {
           batchSize: context.batchSize,
           depth: context.depth + 1,
+          pathPrefix: paths[index],
           onAppend: context.onAppend,
         },
       );
 
       requestCount += childResult.requestCount;
       appendedBlocks.push(...childResult.appendedBlocks);
+      blockMappings.push(...childResult.blockMappings);
     }
   }
 
   return {
     topLevelBlocks,
     appendedBlocks,
+    blockMappings,
     requestCount,
   };
+}
+
+function assertCreatedBlocks(
+  created: AppendBlockChildrenResponse['results'],
+  expectedCount: number,
+  parentId: string,
+  depth: number,
+): void {
+  if (!Array.isArray(created) || created.length !== expectedCount) {
+    const actualCount = Array.isArray(created) ? created.length : 'invalid';
+    throw new Error(
+      `Notion append response mismatch for parent ${parentId} at depth ${depth}: expected ${expectedCount} blocks, received ${actualCount}`,
+    );
+  }
+
+  created.forEach((createdBlock, index) => {
+    if (!createdBlock?.id) {
+      throw new Error(
+        `Notion append response missing id for parent ${parentId} at depth ${depth}, index ${index}`,
+      );
+    }
+  });
 }
 
 function normalizeBatchSize(batchSize?: number): number {
@@ -152,16 +220,6 @@ function normalizeBatchSize(batchSize?: number): number {
   }
 
   return Math.min(batchSize, MAX_APPEND_CHILDREN);
-}
-
-function chunkBlocks(blocks: Block[], batchSize: number): Block[][] {
-  const chunks: Block[][] = [];
-
-  for (let index = 0; index < blocks.length; index += batchSize) {
-    chunks.push(blocks.slice(index, index + batchSize));
-  }
-
-  return chunks;
 }
 
 function getDeferredChildren(block: Block): Block[] {

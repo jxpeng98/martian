@@ -1,4 +1,4 @@
-import {richText, supportedCodeLang, TableRowBlock} from './common';
+import {richText, supportedCodeLang, TableRowBlock} from './common.js';
 import {AppendBlockChildrenParameters} from '@notionhq/client/build/src/api-endpoints';
 
 export type Block = AppendBlockChildrenParameters['children'][number];

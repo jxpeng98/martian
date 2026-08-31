@@ -1,12 +1,10 @@
-import path from 'path';
-import {URL} from 'url';
-import * as md from '../markdown';
-import * as notion from '../notion';
+import * as md from '../markdown/index.js';
+import * as notion from '../notion/index.js';
 import {
   ensureCodeBlockLanguage,
   ensureLength,
   parseInline,
-} from '../parser/shared';
+} from '../parser/shared.js';
 import {
   buildScopedPath,
   createChildContext,
@@ -18,13 +16,14 @@ import {
   updateHeadingStack,
   type HeadingScope,
   type SequenceContext,
-} from './context';
-import {buildNodeIdentity, finalizeSubtreeHash, hashContent} from './identity';
+} from './context.js';
+import {buildNodeIdentity, finalizeSubtreeHash, hashContent} from './identity.js';
 import {
   buildTextAnchor,
   normalizeAssetRef,
   plainTextFromRichText,
-} from './normalize';
+} from './normalize.js';
+import {basename, extension, pathnameFromRef} from './path.js';
 import type {
   RenderBlockSpec,
   SyncDocument,
@@ -35,7 +34,7 @@ import type {
   SyncNodeType,
   SyncOptions,
   SourceRange,
-} from './types';
+} from './types.js';
 
 interface NodeDraft {
   nodeType: SyncNodeType;
@@ -1018,22 +1017,10 @@ function detectAssetKind(ref: string): SyncAssetKind {
 }
 
 function assetDisplayName(ref: string): string | undefined {
-  const parsed = safeUrl(ref);
-  const pathname = parsed?.pathname ?? ref;
-  const base = path.posix.basename(pathname);
+  const base = basename(pathnameFromRef(ref));
   return base && base !== '.' ? decodeURIComponent(base) : undefined;
 }
 
 function assetExtension(ref: string): string {
-  const parsed = safeUrl(ref);
-  const pathname = parsed?.pathname ?? ref;
-  return path.extname(pathname).toLowerCase();
-}
-
-function safeUrl(ref: string): URL | undefined {
-  try {
-    return new URL(ref);
-  } catch {
-    return undefined;
-  }
+  return extension(pathnameFromRef(ref));
 }

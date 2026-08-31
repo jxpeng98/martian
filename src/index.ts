@@ -1,13 +1,13 @@
 import {unified} from 'unified';
 import markdown from 'remark-parse';
-import type * as notion from './notion';
+import type * as notion from './notion/index.js';
 import {
   BlocksOptions,
   parseBlocks,
   parseRichText,
   RichTextOptions,
-} from './parser/internal';
-import type * as md from './markdown';
+} from './parser/internal.js';
+import type * as md from './markdown/index.js';
 import gfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import {
@@ -16,7 +16,7 @@ import {
   type SyncDocument,
   type SyncOptions,
   type SyncRenderOptions,
-} from './sync';
+} from './sync/index.js';
 
 /**
  * Parses Markdown content into Notion Blocks.
@@ -90,7 +90,20 @@ export function markdownToBlocksWithSync(
   };
 }
 
-export {LIMITS} from './notion';
+export {LIMITS} from './notion/index.js';
 
-export {appendBlocksDeep, paragraph} from './notion';
-export type {SyncDocument, SyncOptions, SyncRenderOptions} from './sync';
+export {appendBlocksDeep, paragraph} from './notion/index.js';
+export type {
+  AppendedBlockMapping,
+  AppendBlocksDeepOptions,
+  AppendBlocksDeepResult,
+  Block,
+  BlockChildrenAppendClient,
+} from './notion/index.js';
+export type {
+  SyncDocument,
+  SyncFlatNode,
+  SyncNode,
+  SyncOptions,
+  SyncRenderOptions,
+} from './sync/index.js';

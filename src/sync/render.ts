@@ -1,14 +1,13 @@
-import * as notion from '../notion';
-import {LIMITS} from '../notion';
-import path from 'path';
-import {URL} from 'url';
+import * as notion from '../notion/index.js';
+import {LIMITS} from '../notion/index.js';
+import {extension} from './path.js';
 import type {
   ResolvedAsset,
   SyncAssetKind,
   SyncDocument,
   SyncNode,
   SyncRenderOptions,
-} from './types';
+} from './types.js';
 
 const ALLOWED_IMAGE_TYPES = [
   '.png',
@@ -172,7 +171,7 @@ function isValidExternalImageUrl(url: string): boolean {
     return false;
   }
 
-  return ALLOWED_IMAGE_TYPES.includes(path.extname(parsed.pathname).toLowerCase());
+  return ALLOWED_IMAGE_TYPES.includes(extension(parsed.pathname));
 }
 
 function isValidExternalUrl(url: string): boolean {
